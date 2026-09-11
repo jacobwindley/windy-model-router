@@ -7,6 +7,7 @@ from fastapi.responses import JSONResponse
 
 from router.config import settings
 from router.proxy.handler import handle_chat_completion
+from router.proxy.rules import get_rules
 
 structlog.configure(
     wrapper_class=structlog.make_filtering_bound_logger(
@@ -20,6 +21,7 @@ log = structlog.get_logger()
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     log.info("windy-model-router starting", litellm_url=settings.litellm_url)
+    get_rules()  # fail startup loudly on a broken rules.yaml, not the first request
     yield
     log.info("windy-model-router stopping")
 

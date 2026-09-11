@@ -8,6 +8,7 @@ class Settings(BaseSettings):
     session_ttl_seconds: int = 3600
     session_max_size: int = 10000
     log_level: str = "INFO"
+    rules_path: str = "config/rules.yaml"
 
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
 

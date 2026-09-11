@@ -1,0 +1,22 @@
+version: 1
+rules:
+  - id: multimodal-needs-vision
+    match: { has_multimodal: true }
+    route: smart-model
+    reason: "Request contains image content"
+
+  - id: large-context
+    match: { min_tokens: 8000 }
+    route: smart-model
+    reason: "Prompt exceeds 8000 tokens"
+
+  - id: tool-use
+    match: { has_tools: true }
+    route: balanced-model
+    reason: "Request includes tool/function definitions"
+
+  - id: default
+    match: {}
+    route: fast-model
+    reason: "No routing rule matched; default to fast model"
+    default: true
