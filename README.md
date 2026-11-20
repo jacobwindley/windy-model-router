@@ -4,9 +4,13 @@ A metadata-driven LLM routing proxy that sits in front of coding agents (opencod
 
 Routing decisions are based only on request metadata — token count, tool count, multimodality, etc. — never on prompt content.
 
+It also includes a **session advisor**: a Claude Code status line that recommends when to compact or clear context and when to switch models. It is the first step toward a cross-agent harness that can optionally apply those swaps itself (see [`TODO.md`](TODO.md)).
+
 ## Status
 
 Early development. Model registry and stats endpoints are not yet implemented.
+
+Session advisor: advise-only Claude Code status line — **implemented**. Hooks, autopilot, and Codex/opencode support are planned.
 
 Routing tiers:
 
@@ -37,15 +41,20 @@ uv run python ui/app.py
 
 Open `http://localhost:8050`. It's a separate process/port (:8050) from the router — it talks to the router over HTTP like any other client.
 
-### Session advisor (Claude Code status line)
+## Session advisor (Claude Code status line)
 
-A status-line command that watches your Claude Code session and recommends when to compact/clear context or switch models. It shows the advice under the prompt. It's advise-only, and it doesn't need the router to be running.
+A status-line command that watches your Claude Code session and shows advice under the prompt:
 
 ```
 Opus 5.5 · ctx 92% · cache warm 4m · ⚠ context 92% full — run /compact or /clear
 ```
 
-Install it by adding this to `~/.claude/settings.json` (adjust the path):
+It is advise-only: it tells you which command to run and changes nothing itself. It reads only the session metadata Claude Code passes to the status line, never prompt content. It doesn't need the router to be running.
+
+### Install
+
+1. Run `uv sync` in this repo.
+2. Add this to `~/.claude/settings.json` (adjust the path):
 
 ```json
 "statusLine": {
@@ -54,7 +63,25 @@ Install it by adding this to `~/.claude/settings.json` (adjust the path):
 }
 ```
 
-Rules live in `config/advisor.yaml` (override the path with `WINDY_ADVISOR_CONFIG`). Unlike `rules.yaml`, every matching rule fires, and the most severe one is shown. Rate-limit advice applies to claude.ai subscribers and cost advice to API-key users. Model-switch advice notes when the prompt cache is warm, because switching then re-sends the whole context uncached. See `TODO.md` for what's next (hooks, autopilot, other harnesses).
+It works with both claude.ai subscriptions and API keys. It detects which one you use from whether Claude Code sends rate-limit data, which it does only for subscribers.
+
+### Rules
+
+Rules live in `config/advisor.yaml`. To use a different file, set the `WINDY_ADVISOR_CONFIG` environment variable. Unlike `rules.yaml`, every matching rule fires, and the status line shows the most severe one.
+
+| Rule | Fires when | Suggests |
+|---|---|---|
+| `context-critical` | context ≥ 90% full | `/compact` or `/clear` |
+| `context-high` | context ≥ 70% full | `/compact` |
+| `context-large` | context ≥ 300k tokens (percent thresholds are lenient on 1M-context models) | `/compact` |
+| `rate-limit-pressure` | subscription, a rate-limit window ≥ 75% used | next cheaper model (`opus → sonnet → haiku`) |
+| `session-cost` | API key, session cost ≥ $5 | next cheaper model |
+
+When the prompt cache is warm, model-switch advice includes what switching would cost: Claude Code reports exactly how many tokens a cache miss re-sends, e.g. "switching now re-sends ~100k tokens uncached; cache cools in 4m."
+
+To save the raw payload Claude Code sends, add `--capture <path>` to the command. This is how the test fixture was made.
+
+See [`TODO.md`](TODO.md) for what's next: hooks, an autopilot toggle that swaps models itself, the router as an Anthropic `/v1/messages` gateway, and Codex/opencode adapters.
 
 ## Configuration
 
