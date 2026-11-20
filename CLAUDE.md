@@ -46,6 +46,16 @@ Request flow: `POST /v1/chat/completions` (`router/main.py`) → optional bearer
 
 A standalone Dash app (own process, `:8050`), not served by the router — it's an HTTP client like any other, calling `POST /v1/chat/completions` on the router and rendering the decision from the `X-Route-Info` header as a Plotly tier-pipeline diagram (Tier 1 highlighted with the matched rule/reason, Tiers 2/3 shown as not-yet-implemented). Colors are pulled from the project's `dataviz` skill palette (status colors for matched/pending, not picked ad hoc). Demo checkboxes ("include a tool call", "include image content", "pad prompt over 8000 tokens") construct requests that deliberately trigger each Tier-1 rule. A tool-call response has `content: null` with `tool_calls` populated instead — the UI must render that case, not just assume `message.content` is always a string. `dash` is an optional dependency (`[project.optional-dependencies].ui`) kept out of the core router's install.
 
+### `router/advisor/` — session advisor
+
+Separate from request routing: it recommends compacting/clearing context or switching models, based on a harness-agnostic `SessionSnapshot` (`snapshot.py`, metadata only). It is advise-only for now, and `TODO.md` holds the roadmap (hooks, autopilot, `/v1/messages` gateway, other harnesses).
+
+- **`engine.py`** loads `config/advisor.yaml`. It uses the same pydantic `extra="forbid"` + `lru_cache` style as `rules.py`, but **every matching rule fires**, sorted most-severe first. A threshold on a signal the harness didn't report never matches. `switch_model` rules fill `{target}` from the `downshift` ladder and are skipped at the bottom of it. They also get a cache-cost note when the prompt cache is warm.
+- **`claude_code.py`** is the Claude Code status-line adapter (`windy-statusline` script). It reads the status-line JSON from stdin and prints one line. Parsing is defensive, and it must never raise. `auth_mode` is inferred from `rate_limits` being present (subscribers only).
+- **cwd gotcha:** harness integrations run with cwd set to the *user's* project. The advisor therefore resolves `advisor.yaml` relative to the repo (or `WINDY_ADVISOR_CONFIG`) and must **not** import `router.config`, whose `.env`/`rules_path` are cwd-relative.
+- The test fixture `tests/advisor/fixtures/claude_code_statusline.json` is a real, redacted Claude Code payload (subscription, 1M-context Opus). Refresh it with `windy-statusline --capture <path>`. Notable real-payload facts: `prompt_cache.expires_at`/`rate_limits.*.resets_at` are epoch seconds, `prompt_cache.ttl` is a string like `"1h"`, and `prompt_cache.recache_tokens_if_cold` gives the exact cache-miss re-send cost (preferred over summing `current_usage`).
+- Context rules use both `min_context_pct` and `min_context_tokens`. Percent alone is too lenient on 1M-context models.
+
 ### Tiers 2/3
 
 Not implemented. `router/proxy/route_info.py`'s `TIERS` tuple and `MATCHED_TIER = 1` are the only place they're referenced (as static "not_implemented" descriptors) — don't assume any weighted-scoring or bandit logic exists elsewhere. `SESSION_TTL_SECONDS`/`SESSION_MAX_SIZE` in settings anticipate a future session-state cache (e.g. for bandit state) that doesn't exist in code yet. `/admin/models` and `/admin/stats` are still placeholder responses.

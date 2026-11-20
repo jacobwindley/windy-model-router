@@ -37,6 +37,25 @@ uv run python ui/app.py
 
 Open `http://localhost:8050`. It's a separate process/port (:8050) from the router — it talks to the router over HTTP like any other client.
 
+### Session advisor (Claude Code status line)
+
+A status-line command that watches your Claude Code session and recommends when to compact/clear context or switch models. It shows the advice under the prompt. It's advise-only, and it doesn't need the router to be running.
+
+```
+Opus 5.5 · ctx 92% · cache warm 4m · ⚠ context 92% full — run /compact or /clear
+```
+
+Install it by adding this to `~/.claude/settings.json` (adjust the path):
+
+```json
+"statusLine": {
+  "type": "command",
+  "command": "uv run --project C:/path/to/windy-model-router windy-statusline"
+}
+```
+
+Rules live in `config/advisor.yaml` (override the path with `WINDY_ADVISOR_CONFIG`). Unlike `rules.yaml`, every matching rule fires, and the most severe one is shown. Rate-limit advice applies to claude.ai subscribers and cost advice to API-key users. Model-switch advice notes when the prompt cache is warm, because switching then re-sends the whole context uncached. See `TODO.md` for what's next (hooks, autopilot, other harnesses).
+
 ## Configuration
 
 Set via `.env` (see `.env.example`):

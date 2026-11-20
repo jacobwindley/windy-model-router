@@ -1,0 +1,54 @@
+# Session advisor rules. Every matching rule fires (unlike rules.yaml, which is
+# first-match-wins); recommendations are shown most-severe first.
+#
+# match keys (all optional, ANDed; a threshold on a signal the harness didn't
+# report never matches): min_context_pct, min_context_tokens, auth_mode
+# (subscription | api_key), min_rate_limit_pct, min_session_cost_usd,
+# model_family (fable|opus|sonnet|haiku)
+#
+# message/action placeholders: {context_pct} {context_tokens} {rate_limit_pct} {session_cost}
+# {model} {target}. `switch_model` rules use the `downshift` ladder to fill
+# {target}, and are skipped when the current model has no cheaper step.
+version: 1
+
+downshift:
+  opus: sonnet
+  sonnet: haiku
+
+rules:
+  - id: context-critical
+    match: { min_context_pct: 90 }
+    kind: compact
+    severity: critical
+    message: "context {context_pct}% full"
+    action: "/compact or /clear"
+
+  - id: context-high
+    match: { min_context_pct: 70 }
+    kind: compact
+    severity: warn
+    message: "context {context_pct}% full"
+    action: "/compact"
+
+  # Percent thresholds are lenient on 1M-context models (70% = 700k tokens), so
+  # also flag large contexts by absolute size: every turn re-reads all of it.
+  - id: context-large
+    match: { min_context_tokens: 300000 }
+    kind: compact
+    severity: warn
+    message: "context {context_tokens} tokens; every turn re-reads it"
+    action: "/compact"
+
+  - id: rate-limit-pressure
+    match: { auth_mode: subscription, min_rate_limit_pct: 75 }
+    kind: switch_model
+    severity: warn
+    message: "rate limit {rate_limit_pct}% used; {target} stretches it further"
+    action: "/model {target}"
+
+  - id: session-cost
+    match: { auth_mode: api_key, min_session_cost_usd: 5 }
+    kind: switch_model
+    severity: info
+    message: "session cost ${session_cost}; {target} is cheaper"
+    action: "/model {target}"

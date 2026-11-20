@@ -1,0 +1,87 @@
+{
+  "_note": "Real Claude Code 2.1.329 status-line payload (subscription, opus[1m]), captured 2026-11-20 and redacted.",
+  "session_id": "00000000-0000-0000-0000-000000000000",
+  "transcript_path": "/redacted",
+  "cwd": "/redacted",
+  "scratchpad_dir": "/redacted",
+  "prompt_id": "00000000-0000-0000-0000-000000000001",
+  "effort": {
+    "level": "medium"
+  },
+  "session_name": "redacted",
+  "model": {
+    "id": "claude-opus-5-5",
+    "display_name": "Opus 5.5"
+  },
+  "workspace": {
+    "current_dir": "/redacted",
+    "project_dir": "/redacted",
+    "added_dirs": [],
+    "repo": {
+      "host": "github.com",
+      "owner": "redacted",
+      "name": "redacted"
+    }
+  },
+  "version": "2.1.329",
+  "output_style": {
+    "name": "default"
+  },
+  "cost": {
+    "total_cost_usd": 1.90099816,
+    "total_duration_ms": 6153147,
+    "total_api_duration_ms": 397161,
+    "total_lines_added": 901,
+    "total_lines_removed": 3
+  },
+  "context_window": {
+    "total_input_tokens": 101300,
+    "total_output_tokens": 8,
+    "context_window_size": 1000000,
+    "current_usage": {
+      "input_tokens": 2,
+      "output_tokens": 8,
+      "cache_creation_input_tokens": 1402,
+      "cache_read_input_tokens": 99896
+    },
+    "used_percentage": 10,
+    "remaining_percentage": 90
+  },
+  "exceeds_200k_tokens": false,
+  "prompt_cache": {
+    "warm": true,
+    "caching_observed": true,
+    "ttl": "1h",
+    "expires_at": 1795164673,
+    "requests": 22,
+    "misses": 1,
+    "expected_rebuilds": 0,
+    "hit_ratio": 0.9471199097617644,
+    "cache_write_tokens": 91691,
+    "miss_recache_tokens": 25140,
+    "last_miss_at": 1795159626,
+    "last_miss_cause": {
+      "causes": [
+        "ttl_expired_1h"
+      ]
+    },
+    "miss_causes": {
+      "ttl_expired_1h": 1
+    },
+    "recache_tokens_if_cold": 99900
+  },
+  "fast_mode": false,
+  "thinking": {
+    "enabled": true
+  },
+  "rate_limits": {
+    "five_hour": {
+      "used_percentage": 7,
+      "resets_at": 1795176600
+    },
+    "seven_day": {
+      "used_percentage": 42,
+      "resets_at": 1795327200
+    }
+  }
+}
